@@ -7,98 +7,109 @@
     <link rel="manifest" href="manifest.json">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        * { box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f4f6f9;
             margin: 0;
-            padding: 20px;
+            padding: 12px;
             color: #333;
         }
         .container {
-            max-width: 900px;
+            max-width: 850px;
             margin: 0 auto;
             background: white;
-            padding: 25px;
+            padding: 15px;
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            overflow: hidden;
         }
         h1 {
             text-align: center;
             color: #1b5e20;
-            margin-bottom: 20px;
+            font-size: 22px;
+            margin-bottom: 15px;
         }
         
         /* Форма ввода */
         .add-form {
             display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+            gap: 8px;
+            margin-bottom: 15px;
             flex-wrap: wrap;
         }
         .add-form input, .add-form select {
-            flex: 1;
-            min-width: 110px;
+            flex: 1 1 130px;
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 6px;
             font-size: 14px;
+            width: 100%;
         }
         .btn-main {
+            flex: 1 1 100%;
             background-color: #2e7d32;
             color: white;
             border: none;
-            padding: 10px 16px;
+            padding: 12px;
             border-radius: 6px;
             cursor: pointer;
             font-weight: bold;
+            font-size: 15px;
         }
         .btn-main:hover { background-color: #1b5e20; }
 
         /* Суммарные карточки */
         .summary-cards {
             display: flex;
-            justify-content: space-between;
-            gap: 15px;
+            gap: 10px;
             margin-bottom: 20px;
             flex-wrap: wrap;
         }
         .card {
-            flex: 1;
-            min-width: 180px;
+            flex: 1 1 100px;
             background: #f8f9fa;
-            padding: 15px;
+            padding: 10px 12px;
             border-radius: 8px;
             border-left: 4px solid #2e7d32;
         }
-        .card-title { font-size: 12px; color: #666; text-transform: uppercase; }
-        .card-value { font-size: 20px; font-weight: bold; color: #1b5e20; margin-top: 5px; }
+        .card-title { font-size: 10px; color: #666; text-transform: uppercase; font-weight: 600; }
+        .card-value { font-size: 16px; font-weight: bold; color: #1b5e20; margin-top: 4px; }
 
         .chart-box {
             position: relative;
             width: 100%;
-            max-width: 320px;
-            margin: 0 auto 30px auto;
+            max-width: 280px;
+            margin: 0 auto 20px auto;
         }
 
-        /* Таблица */
+        /* Адаптивная таблица */
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin-top: 10px;
+            border-radius: 6px;
+            border: 1px solid #eee;
+        }
         table {
             width: 100%;
+            min-width: 550px;
             border-collapse: collapse;
-            margin-top: 10px;
         }
         th, td {
-            padding: 12px 8px;
+            padding: 10px 6px;
             text-align: left;
             border-bottom: 1px solid #eee;
-            font-size: 14px;
+            font-size: 13px;
+            white-space: nowrap;
         }
         th { background-color: #f8f9fa; color: #555; }
         
-        /* Цвета статусов */
         .status-tag {
-            padding: 4px 8px;
+            padding: 3px 6px;
             border-radius: 4px;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: bold;
             display: inline-block;
         }
@@ -116,20 +127,22 @@
         }
 
         .backup-tools {
-            margin-top: 25px;
+            margin-top: 20px;
             padding-top: 15px;
             border-top: 1px solid #eee;
             display: flex;
-            gap: 10px;
-            justify-content: flex-end;
+            gap: 8px;
+            flex-wrap: wrap;
         }
         .btn-sec {
+            flex: 1;
             background-color: #f0f0f0;
             border: 1px solid #ccc;
-            padding: 6px 12px;
-            border-radius: 4px;
+            padding: 8px;
+            border-radius: 6px;
             cursor: pointer;
             font-size: 12px;
+            text-align: center;
         }
     </style>
 </head>
@@ -138,7 +151,6 @@
 <div class="container">
     <h1>Halal Investment Tracker Pro</h1>
 
-    <!-- Форма ввода активов -->
     <div class="add-form">
         <input type="text" id="ticker" placeholder="Тикер (AAPL)">
         <input type="number" id="shares" placeholder="Кол-во" min="0.01" step="any">
@@ -148,52 +160,51 @@
             <option value="Non-Compliant">Non-Compliant</option>
             <option value="Doubtful">Doubtful</option>
         </select>
-        <input type="text" id="note" placeholder="Источник (Zoya и др.)">
+        <input type="text" id="note" placeholder="Источник (Zoya)">
         <button class="btn-main" onclick="addAsset()">Добавить / Усреднить</button>
     </div>
 
-    <!-- Карточки сумм -->
     <div class="summary-cards">
         <div class="card">
             <div class="card-title">Итого капитал</div>
             <div class="card-value">$<span id="totalValue">0.00</span></div>
         </div>
         <div class="card" style="border-left-color: #00acc1;">
-            <div class="card-title">Свободный Cash</div>
+            <div class="card-title">Cash</div>
             <div class="card-value">$<span id="cashValue">0.00</span></div>
         </div>
         <div class="card" style="border-left-color: #fb8c00;">
-            <div class="card-title">Расчет Закята (2.5% от Халяль)</div>
+            <div class="card-title">Закят (2.5%)</div>
             <div class="card-value">$<span id="zakatValue">0.00</span></div>
         </div>
     </div>
 
-    <!-- Диаграмма -->
     <div class="chart-box">
         <canvas id="portfolioChart"></canvas>
     </div>
 
-    <!-- Таблица -->
-    <table>
-        <thead>
-            <tr>
-                <th>Тикер</th>
-                <th>Статус</th>
-                <th>Кол-во</th>
-                <th>Ср. Цена</th>
-                <th>Сумма</th>
-                <th>Доля</th>
-                <th>Источник</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody id="portfolioTable"></tbody>
-    </table>
+    <!-- Таблица в обертке для аккуратного скролла -->
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Тикер</th>
+                    <th>Статус</th>
+                    <th>Кол-во</th>
+                    <th>Ср. Цена</th>
+                    <th>Сумма</th>
+                    <th>Доля</th>
+                    <th>Источник</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="portfolioTable"></tbody>
+        </table>
+    </div>
 
-    <!-- Резервное копирование -->
     <div class="backup-tools">
-        <button class="btn-sec" onclick="exportData()">💾 Сохранить резервную копию</button>
-        <button class="btn-sec" onclick="document.getElementById('importFile').click()">📂 Загрузить из файла</button>
+        <button class="btn-sec" onclick="exportData()">💾 Сохранить бэкап</button>
+        <button class="btn-sec" onclick="document.getElementById('importFile').click()">📂 Загрузить файл</button>
         <input type="file" id="importFile" style="display:none" onchange="importData(event)">
     </div>
 </div>
@@ -220,7 +231,6 @@
         let stocksTotal = state.assets.reduce((sum, a) => sum + (a.shares * a.price), 0);
         let grandTotal = stocksTotal + state.cash;
 
-        // Считаем сумму только халяльных активов + cash для корректного Закята
         let halalTotal = state.cash + state.assets
             .filter(a => a.status === 'Halal')
             .reduce((sum, a) => sum + (a.shares * a.price), 0);
@@ -240,7 +250,6 @@
             labels.push(asset.ticker);
             values.push(assetTotal);
 
-            // Определение стиля статуса
             let statusClass = 'status-halal';
             if (asset.status === 'Non-Compliant') statusClass = 'status-non-compliant';
             if (asset.status === 'Doubtful') statusClass = 'status-doubtful';
@@ -259,7 +268,6 @@
             tableBody.appendChild(row);
         });
 
-        // Отрисовка диаграммы
         const ctx = document.getElementById('portfolioChart').getContext('2d');
         if (chartInstance) chartInstance.destroy();
 
@@ -293,7 +301,6 @@
 
             const existingIndex = state.assets.findIndex(a => a.ticker === ticker);
             if (existingIndex > -1) {
-                // Усреднение цены
                 let existing = state.assets[existingIndex];
                 let newTotalShares = existing.shares + shares;
                 let newAvgPrice = ((existing.shares * existing.price) + (shares * price)) / newTotalShares;
