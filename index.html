@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Halal Investment Tracker</title>
-    <!-- Подключаем библиотеку для графиков -->
+    <title>Halal Investment Tracker Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
@@ -15,7 +14,7 @@
             color: #333;
         }
         .container {
-            max-width: 750px;
+            max-width: 850px;
             margin: 0 auto;
             background: white;
             padding: 25px;
@@ -28,45 +27,49 @@
             margin-bottom: 20px;
         }
         
-        /* Форма ввода */
         .add-form {
             display: flex;
             gap: 10px;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             flex-wrap: wrap;
         }
         .add-form input {
             flex: 1;
-            min-width: 120px;
+            min-width: 110px;
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 6px;
             font-size: 14px;
         }
-        .add-form button {
+        .btn-main {
             background-color: #2e7d32;
             color: white;
             border: none;
-            padding: 10px 18px;
+            padding: 10px 16px;
             border-radius: 6px;
             cursor: pointer;
             font-weight: bold;
-            transition: background 0.2s;
         }
-        .add-form button:hover {
-            background-color: #1b5e20;
-        }
+        .btn-main:hover { background-color: #1b5e20; }
 
-        /* Общая сумма */
-        .total-summary {
-            font-size: 18px;
-            font-weight: bold;
-            text-align: right;
-            margin-bottom: 15px;
-            color: #2e7d32;
+        .summary-cards {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
         }
+        .card {
+            flex: 1;
+            min-width: 180px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #2e7d32;
+        }
+        .card-title { font-size: 12px; color: #666; text-transform: uppercase; }
+        .card-value { font-size: 20px; font-weight: bold; color: #1b5e20; margin-top: 5px; }
 
-        /* График */
         .chart-box {
             position: relative;
             width: 100%;
@@ -74,54 +77,82 @@
             margin: 0 auto 30px auto;
         }
 
-        /* Таблица */
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 10px;
         }
         th, td {
-            padding: 12px;
+            padding: 12px 8px;
             text-align: left;
             border-bottom: 1px solid #eee;
-        }
-        th {
-            background-color: #f8f9fa;
-            color: #555;
             font-size: 14px;
         }
+        th { background-color: #f8f9fa; color: #555; }
+        
         .tag-halal {
             background-color: #e8f5e9;
             color: #2e7d32;
-            padding: 3px 8px;
+            padding: 3px 6px;
             border-radius: 4px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: bold;
         }
         .btn-delete {
             background-color: #ffebee;
             color: #c62828;
             border: none;
-            padding: 5px 10px;
+            padding: 4px 8px;
             border-radius: 4px;
             cursor: pointer;
         }
-        .btn-delete:hover {
-            background-color: #ffcdd2;
+
+        .backup-tools {
+            margin-top: 25px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        .btn-sec {
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Halal Investment Tracker</h1>
+    <h1>Halal Investment Tracker Pro</h1>
 
-    <!-- Форма для добавления бумаг -->
+    <!-- Форма ввода активов -->
     <div class="add-form">
-        <input type="text" id="ticker" placeholder="Тикер (например, AAPL)" uppercase>
-        <input type="number" id="shares" placeholder="Кол-во (шт)" min="1">
-        <input type="number" id="price" placeholder="Цена за шт ($)" step="0.01" min="0">
-        <button onclick="addAsset()">Добавить</button>
+        <input type="text" id="ticker" placeholder="Тикер (AAPL)">
+        <input type="number" id="shares" placeholder="Кол-во" min="0.01" step="any">
+        <input type="number" id="price" placeholder="Цена ($)" step="0.01">
+        <input type="text" id="note" placeholder="Источник (напр. Zoya)">
+        <button class="btn-main" onclick="addAsset()">Добавить / Усреднить</button>
+    </div>
+
+    <!-- Карточки сумм -->
+    <div class="summary-cards">
+        <div class="card">
+            <div class="card-title">Итого капитал</div>
+            <div class="card-value">$<span id="totalValue">0.00</span></div>
+        </div>
+        <div class="card" style="border-left-color: #00acc1;">
+            <div class="card-title">Свободный Cash</div>
+            <div class="card-value">$<span id="cashValue">0.00</span></div>
+        </div>
+        <div class="card" style="border-left-color: #fb8c00;">
+            <div class="card-title">Расчет Закята (2.5%)</div>
+            <div class="card-value">$<span id="zakatValue">0.00</span></div>
+        </div>
     </div>
 
     <!-- Диаграмма -->
@@ -129,127 +160,159 @@
         <canvas id="portfolioChart"></canvas>
     </div>
 
-    <!-- Общая стоимость -->
-    <div class="total-summary">
-        Итого портфель: $<span id="totalValue">0.00</span>
-    </div>
-
-    <!-- Таблица активов -->
+    <!-- Таблица -->
     <table>
         <thead>
             <tr>
                 <th>Тикер</th>
-                <th>Статус</th>
                 <th>Кол-во</th>
-                <th>Цена</th>
+                <th>Ср. Цена</th>
                 <th>Сумма</th>
+                <th>Доля</th>
+                <th>Источник</th>
                 <th></th>
             </tr>
         </thead>
-        <tbody id="portfolioTable">
-            <!-- Строки будут добавляться автоматически -->
-        </tbody>
+        <tbody id="portfolioTable"></tbody>
     </table>
+
+    <!-- Управление бекапом -->
+    <div class="backup-tools">
+        <button class="btn-sec" onclick="exportData()">💾 Сохранить резервную копию</button>
+        <button class="btn-sec" onclick="document.getElementById('importFile').click()">📂 Загрузить из файла</button>
+        <input type="file" id="importFile" style="display:none" onchange="importData(event)">
+    </div>
 </div>
 
 <script>
-    // Массив для хранения данных о бумагах
-    let assets = [
-        { ticker: 'AAPL', shares: 2, price: 180 },
-        { ticker: 'MSFT', shares: 1, price: 400 }
-    ];
+    let state = JSON.parse(localStorage.getItem('halalPortfolioState')) || {
+        cash: 170,
+        assets: [
+            { ticker: 'AAPL', shares: 1, price: 220, note: 'Zoya' },
+            { ticker: 'MSFT', shares: 1, price: 400, note: 'Mushtari' }
+        ]
+    };
 
     let chartInstance = null;
 
-    // Функция отрисовки таблицы и диаграммы
+    function saveState() {
+        localStorage.setItem('halalPortfolioState', JSON.stringify(state));
+    }
+
     function updateUI() {
         const tableBody = document.getElementById('portfolioTable');
-        const totalValueEl = document.getElementById('totalValue');
         tableBody.innerHTML = '';
 
-        let totalPortfolioValue = 0;
-        const labels = [];
-        const values = [];
-        const colors = ['#2e7d32', '#1e88e5', '#fb8c00', '#8e24aa', '#00acc1', '#d81b60', '#43a047'];
+        let stocksTotal = state.assets.reduce((sum, a) => sum + (a.shares * a.price), 0);
+        let grandTotal = stocksTotal + state.cash;
 
-        assets.forEach((asset, index) => {
-            const totalAssetValue = asset.shares * asset.price;
-            totalPortfolioValue += totalAssetValue;
+        document.getElementById('totalValue').textContent = grandTotal.toFixed(2);
+        document.getElementById('cashValue').textContent = state.cash.toFixed(2);
+        document.getElementById('zakatValue').textContent = (grandTotal * 0.025).toFixed(2);
+
+        const labels = ['CASH (Наличные)'];
+        const values = [state.cash];
+        const colors = ['#00acc1', '#2e7d32', '#4caf50', '#81c784', '#fb8c00', '#8e24aa', '#d81b60'];
+
+        state.assets.forEach((asset, index) => {
+            const assetTotal = asset.shares * asset.price;
+            const sharePercent = grandTotal > 0 ? ((assetTotal / grandTotal) * 100).toFixed(1) : 0;
 
             labels.push(asset.ticker);
-            values.push(totalAssetValue);
+            values.push(assetTotal);
 
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td><strong>${asset.ticker}</strong></td>
-                <td><span class="tag-halal">Halal</span></td>
+                <td><strong>${asset.ticker}</strong> <span class="tag-halal">Halal</span></td>
                 <td>${asset.shares}</td>
                 <td>$${asset.price.toFixed(2)}</td>
-                <td>$${totalAssetValue.toFixed(2)}</td>
+                <td>$${assetTotal.toFixed(2)}</td>
+                <td><strong>${sharePercent}%</strong></td>
+                <td><small>${asset.note || '-'}</small></td>
                 <td><button class="btn-delete" onclick="deleteAsset(${index})">✕</button></td>
             `;
             tableBody.appendChild(row);
         });
 
-        totalValueEl.textContent = totalPortfolioValue.toFixed(2);
-
-        // Обновление диаграммы Chart.js
+        // Диаграмма
         const ctx = document.getElementById('portfolioChart').getContext('2d');
-        
-        if (chartInstance) {
-            chartInstance.destroy();
-        }
+        if (chartInstance) chartInstance.destroy();
 
         chartInstance = new Chart(ctx, {
             type: 'doughnut',
             data: {
                 labels: labels,
-                datasets: [{
-                    data: values,
-                    backgroundColor: colors.slice(0, labels.length)
-                }]
+                datasets: [{ data: values, backgroundColor: colors.slice(0, labels.length) }]
             },
             options: {
                 responsive: true,
-                plugins: {
-                    legend: { position: 'bottom' }
-                }
+                plugins: { legend: { position: 'bottom' } }
             }
         });
     }
 
-    // Функция добавления новой бумаги
     function addAsset() {
-        const tickerInput = document.getElementById('ticker');
-        const sharesInput = document.getElementById('shares');
-        const priceInput = document.getElementById('price');
+        const ticker = document.getElementById('ticker').value.trim().toUpperCase();
+        const shares = parseFloat(document.getElementById('shares').value);
+        const price = parseFloat(document.getElementById('price').value);
+        const note = document.getElementById('note').value.trim();
 
-        const ticker = tickerInput.value.trim().toUpperCase();
-        const shares = parseFloat(sharesInput.value);
-        const price = parseFloat(priceInput.value);
+        if (ticker === 'CASH') {
+            if (!isNaN(price)) state.cash = price;
+        } else {
+            if (!ticker || isNaN(shares) || isNaN(price) || shares <= 0 || price <= 0) {
+                alert('Введите корректные данные акции!');
+                return;
+            }
 
-        if (!ticker || isNaN(shares) || isNaN(price) || shares <= 0 || price <= 0) {
-            alert('Пожалуйста, заполните все поля корректными данными!');
-            return;
+            const existingIndex = state.assets.findIndex(a => a.ticker === ticker);
+            if (existingIndex > -1) {
+                // Усреднение цены
+                let existing = state.assets[existingIndex];
+                let newTotalShares = existing.shares + shares;
+                let newAvgPrice = ((existing.shares * existing.price) + (shares * price)) / newTotalShares;
+                
+                state.assets[existingIndex].shares = newTotalShares;
+                state.assets[existingIndex].price = newAvgPrice;
+                if (note) state.assets[existingIndex].note = note;
+            } else {
+                state.assets.push({ ticker, shares, price, note });
+            }
         }
 
-        assets.push({ ticker, shares, price });
-        
-        // Очищаем поля ввода
-        tickerInput.value = '';
-        sharesInput.value = '';
-        priceInput.value = '';
-
+        saveState();
         updateUI();
+
+        document.getElementById('ticker').value = '';
+        document.getElementById('shares').value = '';
+        document.getElementById('price').value = '';
+        document.getElementById('note').value = '';
     }
 
-    // Функция удаления бумаги
     function deleteAsset(index) {
-        assets.splice(index, 1);
+        state.assets.splice(index, 1);
+        saveState();
         updateUI();
     }
 
-    // Первоначальный запуск
+    function exportData() {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
+        const dlAnchor = document.createElement('a');
+        dlAnchor.setAttribute("href", dataStr);
+        dlAnchor.setAttribute("download", "halal_portfolio.json");
+        dlAnchor.click();
+    }
+
+    function importData(event) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            state = JSON.parse(e.target.result);
+            saveState();
+            updateUI();
+        };
+        reader.readAsText(event.target.files[0]);
+    }
+
     updateUI();
 </script>
 
