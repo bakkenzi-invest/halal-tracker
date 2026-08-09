@@ -14,7 +14,7 @@
             color: #333;
         }
         .container {
-            max-width: 850px;
+            max-width: 900px;
             margin: 0 auto;
             background: white;
             padding: 25px;
@@ -27,13 +27,14 @@
             margin-bottom: 20px;
         }
         
+        /* Форма ввода */
         .add-form {
             display: flex;
             gap: 10px;
             margin-bottom: 20px;
             flex-wrap: wrap;
         }
-        .add-form input {
+        .add-form input, .add-form select {
             flex: 1;
             min-width: 110px;
             padding: 10px;
@@ -52,6 +53,7 @@
         }
         .btn-main:hover { background-color: #1b5e20; }
 
+        /* Суммарные карточки */
         .summary-cards {
             display: flex;
             justify-content: space-between;
@@ -77,6 +79,7 @@
             margin: 0 auto 30px auto;
         }
 
+        /* Таблица */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -90,14 +93,18 @@
         }
         th { background-color: #f8f9fa; color: #555; }
         
-        .tag-halal {
-            background-color: #e8f5e9;
-            color: #2e7d32;
-            padding: 3px 6px;
+        /* Цвета статусов */
+        .status-tag {
+            padding: 4px 8px;
             border-radius: 4px;
             font-size: 11px;
             font-weight: bold;
+            display: inline-block;
         }
+        .status-halal { background-color: #e8f5e9; color: #2e7d32; }
+        .status-non-compliant { background-color: #ffebee; color: #c62828; }
+        .status-doubtful { background-color: #fff3e0; color: #ef6c00; }
+
         .btn-delete {
             background-color: #ffebee;
             color: #c62828;
@@ -135,7 +142,12 @@
         <input type="text" id="ticker" placeholder="Тикер (AAPL)">
         <input type="number" id="shares" placeholder="Кол-во" min="0.01" step="any">
         <input type="number" id="price" placeholder="Цена ($)" step="0.01">
-        <input type="text" id="note" placeholder="Источник (напр. Zoya)">
+        <select id="status">
+            <option value="Halal">Halal</option>
+            <option value="Non-Compliant">Non-Compliant</option>
+            <option value="Doubtful">Doubtful</option>
+        </select>
+        <input type="text" id="note" placeholder="Источник (Zoya и др.)">
         <button class="btn-main" onclick="addAsset()">Добавить / Усреднить</button>
     </div>
 
@@ -150,7 +162,7 @@
             <div class="card-value">$<span id="cashValue">0.00</span></div>
         </div>
         <div class="card" style="border-left-color: #fb8c00;">
-            <div class="card-title">Расчет Закята (2.5%)</div>
+            <div class="card-title">Расчет Закята (2.5% от Халяль)</div>
             <div class="card-value">$<span id="zakatValue">0.00</span></div>
         </div>
     </div>
@@ -165,6 +177,7 @@
         <thead>
             <tr>
                 <th>Тикер</th>
+                <th>Статус</th>
                 <th>Кол-во</th>
                 <th>Ср. Цена</th>
                 <th>Сумма</th>
@@ -176,7 +189,7 @@
         <tbody id="portfolioTable"></tbody>
     </table>
 
-    <!-- Управление бекапом -->
+    <!-- Резервное копирование -->
     <div class="backup-tools">
         <button class="btn-sec" onclick="exportData()">💾 Сохранить резервную копию</button>
         <button class="btn-sec" onclick="document.getElementById('importFile').click()">📂 Загрузить из файла</button>
@@ -188,8 +201,8 @@
     let state = JSON.parse(localStorage.getItem('halalPortfolioState')) || {
         cash: 170,
         assets: [
-            { ticker: 'AAPL', shares: 1, price: 220, note: 'Zoya' },
-            { ticker: 'MSFT', shares: 1, price: 400, note: 'Mushtari' }
+            { ticker: 'AAPL', shares: 1, price: 220, status: 'Halal', note: 'Zoya' },
+            { ticker: 'PFE', shares: 10, price: 28, status: 'Non-Compliant', note: 'Zoya Check' }
         ]
     };
 
@@ -206,13 +219,18 @@
         let stocksTotal = state.assets.reduce((sum, a) => sum + (a.shares * a.price), 0);
         let grandTotal = stocksTotal + state.cash;
 
+        // Считаем сумму только халяльных активов + cash для корректного Закята
+        let halalTotal = state.cash + state.assets
+            .filter(a => a.status === 'Halal')
+            .reduce((sum, a) => sum + (a.shares * a.price), 0);
+
         document.getElementById('totalValue').textContent = grandTotal.toFixed(2);
         document.getElementById('cashValue').textContent = state.cash.toFixed(2);
-        document.getElementById('zakatValue').textContent = (grandTotal * 0.025).toFixed(2);
+        document.getElementById('zakatValue').textContent = (halalTotal * 0.025).toFixed(2);
 
         const labels = ['CASH (Наличные)'];
         const values = [state.cash];
-        const colors = ['#00acc1', '#2e7d32', '#4caf50', '#81c784', '#fb8c00', '#8e24aa', '#d81b60'];
+        const colors = ['#00acc1', '#2e7d32', '#e53935', '#fb8c00', '#8e24aa', '#43a047', '#d81b60'];
 
         state.assets.forEach((asset, index) => {
             const assetTotal = asset.shares * asset.price;
@@ -221,9 +239,15 @@
             labels.push(asset.ticker);
             values.push(assetTotal);
 
+            // Определение стиля статуса
+            let statusClass = 'status-halal';
+            if (asset.status === 'Non-Compliant') statusClass = 'status-non-compliant';
+            if (asset.status === 'Doubtful') statusClass = 'status-doubtful';
+
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td><strong>${asset.ticker}</strong> <span class="tag-halal">Halal</span></td>
+                <td><strong>${asset.ticker}</strong></td>
+                <td><span class="status-tag ${statusClass}">${asset.status}</span></td>
                 <td>${asset.shares}</td>
                 <td>$${asset.price.toFixed(2)}</td>
                 <td>$${assetTotal.toFixed(2)}</td>
@@ -234,7 +258,7 @@
             tableBody.appendChild(row);
         });
 
-        // Диаграмма
+        // Отрисовка диаграммы
         const ctx = document.getElementById('portfolioChart').getContext('2d');
         if (chartInstance) chartInstance.destroy();
 
@@ -255,6 +279,7 @@
         const ticker = document.getElementById('ticker').value.trim().toUpperCase();
         const shares = parseFloat(document.getElementById('shares').value);
         const price = parseFloat(document.getElementById('price').value);
+        const status = document.getElementById('status').value;
         const note = document.getElementById('note').value.trim();
 
         if (ticker === 'CASH') {
@@ -274,9 +299,10 @@
                 
                 state.assets[existingIndex].shares = newTotalShares;
                 state.assets[existingIndex].price = newAvgPrice;
+                state.assets[existingIndex].status = status;
                 if (note) state.assets[existingIndex].note = note;
             } else {
-                state.assets.push({ ticker, shares, price, note });
+                state.assets.push({ ticker, shares, price, status, note });
             }
         }
 
