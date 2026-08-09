@@ -3,110 +3,254 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Halal Portfolio Tracker</title>
-    <!-- Подключаем библиотеку Chart.js для красивой диаграммы -->
+    <title>Halal Investment Tracker</title>
+    <!-- Подключаем библиотеку для графиков -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f4f6f9;
             margin: 0;
             padding: 20px;
             color: #333;
         }
         .container {
-            max-width: 600px;
+            max-width: 750px;
             margin: 0 auto;
             background: white;
             padding: 25px;
             border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         }
         h1 {
             text-align: center;
-            color: #2e7d32;
+            color: #1b5e20;
             margin-bottom: 20px;
         }
+        
+        /* Форма ввода */
+        .add-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+        .add-form input {
+            flex: 1;
+            min-width: 120px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .add-form button {
+            background-color: #2e7d32;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        .add-form button:hover {
+            background-color: #1b5e20;
+        }
+
+        /* Общая сумма */
+        .total-summary {
+            font-size: 18px;
+            font-weight: bold;
+            text-align: right;
+            margin-bottom: 15px;
+            color: #2e7d32;
+        }
+
+        /* График */
         .chart-box {
             position: relative;
             width: 100%;
             max-width: 320px;
-            margin: 0 auto 25px auto;
+            margin: 0 auto 30px auto;
         }
-        ul {
-            list-style: none;
-            padding: 0;
+
+        /* Таблица */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
         }
-        li {
-            display: flex;
-            justify-content: space-between;
-            padding: 12px 0;
+        th, td {
+            padding: 12px;
+            text-align: left;
             border-bottom: 1px solid #eee;
-            font-size: 16px;
         }
-        .symbol {
-            font-weight: bold;
+        th {
+            background-color: #f8f9fa;
+            color: #555;
+            font-size: 14px;
         }
-        .tag {
+        .tag-halal {
             background-color: #e8f5e9;
             color: #2e7d32;
-            padding: 4px 8px;
-            border-radius: 6px;
+            padding: 3px 8px;
+            border-radius: 4px;
             font-size: 12px;
+            font-weight: bold;
+        }
+        .btn-delete {
+            background-color: #ffebee;
+            color: #c62828;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-delete:hover {
+            background-color: #ffcdd2;
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Halal Portfolio Tracker</h1>
-    
-    <!-- Контейнер для круговой диаграммы -->
+    <h1>Halal Investment Tracker</h1>
+
+    <!-- Форма для добавления бумаг -->
+    <div class="add-form">
+        <input type="text" id="ticker" placeholder="Тикер (например, AAPL)" uppercase>
+        <input type="number" id="shares" placeholder="Кол-во (шт)" min="1">
+        <input type="number" id="price" placeholder="Цена за шт ($)" step="0.01" min="0">
+        <button onclick="addAsset()">Добавить</button>
+    </div>
+
+    <!-- Диаграмма -->
     <div class="chart-box">
         <canvas id="portfolioChart"></canvas>
     </div>
 
-    <!-- Список бумаг -->
-    <ul>
-        <li>
-            <span class="symbol">AAPL</span>
-            <span>Apple Inc.</span>
-            <span class="tag">Halal</span>
-        </li>
-        <li>
-            <span class="symbol">MSFT</span>
-            <span>Microsoft Corp.</span>
-            <span class="tag">Halal</span>
-        </li>
-        <li>
-            <span class="symbol">NVDA</span>
-            <span>NVIDIA Corp.</span>
-            <span class="tag">Halal</span>
-        </li>
-    </ul>
+    <!-- Общая стоимость -->
+    <div class="total-summary">
+        Итого портфель: $<span id="totalValue">0.00</span>
+    </div>
+
+    <!-- Таблица активов -->
+    <table>
+        <thead>
+            <tr>
+                <th>Тикер</th>
+                <th>Статус</th>
+                <th>Кол-во</th>
+                <th>Цена</th>
+                <th>Сумма</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody id="portfolioTable">
+            <!-- Строки будут добавляться автоматически -->
+        </tbody>
+    </table>
 </div>
 
 <script>
-    // Настройка диаграммы Chart.js
-    const ctx = document.getElementById('portfolioChart').getContext('2d');
-    new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Apple (AAPL)', 'Microsoft (MSFT)', 'NVIDIA (NVDA)'],
-            datasets: [{
-                data: [40, 35, 25], // Проценты долей в портфеле
-                backgroundColor: ['#2e7d32', '#4caf50', '#81c784']
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    position: 'bottom'
+    // Массив для хранения данных о бумагах
+    let assets = [
+        { ticker: 'AAPL', shares: 2, price: 180 },
+        { ticker: 'MSFT', shares: 1, price: 400 }
+    ];
+
+    let chartInstance = null;
+
+    // Функция отрисовки таблицы и диаграммы
+    function updateUI() {
+        const tableBody = document.getElementById('portfolioTable');
+        const totalValueEl = document.getElementById('totalValue');
+        tableBody.innerHTML = '';
+
+        let totalPortfolioValue = 0;
+        const labels = [];
+        const values = [];
+        const colors = ['#2e7d32', '#1e88e5', '#fb8c00', '#8e24aa', '#00acc1', '#d81b60', '#43a047'];
+
+        assets.forEach((asset, index) => {
+            const totalAssetValue = asset.shares * asset.price;
+            totalPortfolioValue += totalAssetValue;
+
+            labels.push(asset.ticker);
+            values.push(totalAssetValue);
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><strong>${asset.ticker}</strong></td>
+                <td><span class="tag-halal">Halal</span></td>
+                <td>${asset.shares}</td>
+                <td>$${asset.price.toFixed(2)}</td>
+                <td>$${totalAssetValue.toFixed(2)}</td>
+                <td><button class="btn-delete" onclick="deleteAsset(${index})">✕</button></td>
+            `;
+            tableBody.appendChild(row);
+        });
+
+        totalValueEl.textContent = totalPortfolioValue.toFixed(2);
+
+        // Обновление диаграммы Chart.js
+        const ctx = document.getElementById('portfolioChart').getContext('2d');
+        
+        if (chartInstance) {
+            chartInstance.destroy();
+        }
+
+        chartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: colors.slice(0, labels.length)
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom' }
                 }
             }
+        });
+    }
+
+    // Функция добавления новой бумаги
+    function addAsset() {
+        const tickerInput = document.getElementById('ticker');
+        const sharesInput = document.getElementById('shares');
+        const priceInput = document.getElementById('price');
+
+        const ticker = tickerInput.value.trim().toUpperCase();
+        const shares = parseFloat(sharesInput.value);
+        const price = parseFloat(priceInput.value);
+
+        if (!ticker || isNaN(shares) || isNaN(price) || shares <= 0 || price <= 0) {
+            alert('Пожалуйста, заполните все поля корректными данными!');
+            return;
         }
-    });
+
+        assets.push({ ticker, shares, price });
+        
+        // Очищаем поля ввода
+        tickerInput.value = '';
+        sharesInput.value = '';
+        priceInput.value = '';
+
+        updateUI();
+    }
+
+    // Функция удаления бумаги
+    function deleteAsset(index) {
+        assets.splice(index, 1);
+        updateUI();
+    }
+
+    // Первоначальный запуск
+    updateUI();
 </script>
 
 </body>
